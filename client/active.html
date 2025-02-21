@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+<!-- Active Bookings View -->
+<div class="flex-1 overflow-auto">
+<div class="p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-teal-950">Active Bookings Overview</h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full bg-white rounded-lg shadow-lg">
+            <thead class="bg-teal-950 text-white">
+                <tr>
+                    <th class="px-6 py-3 text-left">Room Type</th>
+                    <th class="px-6 py-3 text-left">Booking ID</th>
+                    <th class="px-6 py-3 text-left">Check-in</th>
+                    <th class="px-6 py-3 text-left">Check-out</th>
+                    <th class="px-6 py-3 text-left">Guests</th>
+                    <th class="px-6 py-3 text-left">Status</th>
+                    <th class="px-6 py-3 text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-6 py-4">Deluxe Room</td>
+                    <td class="px-6 py-4">#DEL123</td>
+                    <td class="px-6 py-4">25 Dec 2023</td>
+                    <td class="px-6 py-4">28 Dec 2023</td>
+                    <td class="px-6 py-4">2 Adults</td>
+                    <td class="px-6 py-4">
+                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Active</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex space-x-2">
+                            <button class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-6 py-4">Suite Room</td>
+                    <td class="px-6 py-4">#SUI456</td>
+                    <td class="px-6 py-4">25 Dec 2023</td>
+                    <td class="px-6 py-4">28 Dec 2023</td>
+                    <td class="px-6 py-4">4 Adults</td>
+                    <td class="px-6 py-4">
+                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Active</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex space-x-2">
+                            <button class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+
+
+</body>
+
+
+
