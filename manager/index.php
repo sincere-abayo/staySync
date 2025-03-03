@@ -48,7 +48,7 @@ $stats = [
                         </a>
                     </li>
                     <li>
-                        <a href="rooms.php" class="flex items-center space-x-3 p-2 hover:bg-amber-500 rounded-lg">
+                        <a href="room-management.php" class="flex items-center space-x-3 p-2 hover:bg-amber-500 rounded-lg">
                             <i class="fas fa-door-open"></i>
                             <span>Rooms</span>
                         </a>
