@@ -42,7 +42,19 @@ $stats = [
                         </a>
                     </li>
                     <li>
-                        <a href="bookings.php" class="flex items-center space-x-3 p-2 hover:bg-amber-500 rounded-lg">
+                        <a href="services.php" class="flex items-center space-x-3 p-2 hover:bg-amber-500 rounded-lg">
+                            <i class="fas fa-concierge-bell"></i>
+                            <span>Services</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="galley.php" class="flex items-center space-x-3 p-2 hover:bg-amber-500 rounded-lg">
+                            <i class="fas fa-images"></i>
+                            <span>Galley</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="booking.php" class="flex items-center space-x-3 p-2 hover:bg-amber-500 rounded-lg">
                             <i class="fas fa-calendar-alt"></i>
                             <span>Bookings</span>
                         </a>
@@ -205,35 +217,59 @@ $stats = [
                     </div>
                 </div>
 
-        <!-- Rooms Management Section -->
-        <div class="mb-8">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold text-teal-950">Rooms Management</h2>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Sample Room Card -->
-                <div class="bg-white p-4 rounded-lg shadow-lg">
-                   
-                
+      <!-- Recent Rooms Section -->
+<div class="mb-8">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-teal-950">Recent Rooms</h2>
+        <a href="room-management.php" class="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600">
+            View All Rooms
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <?php
+        $recent_rooms = $conn->query("SELECT * FROM rooms ORDER BY created_at DESC LIMIT 5");
+        while($room = $recent_rooms->fetch_assoc()): ?>
+            <div class="bg-white p-4 rounded-lg shadow-lg">
                 <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="text-xl font-semibold text-teal-950">Deluxe Room</h3>
-                            <p class="text-gray-600">Room #: 101</p>
-                            <p class="text-amber-500 font-bold">$299/night</p>
-                            <p class="text-gray-600">Status: Available</p>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button class="text-blue-500 hover:text-blue-700">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="text-red-500 hover:text-red-700">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-teal-950"><?php echo $room['room_type']; ?></h3>
+                        <p class="text-gray-600">Room #: <?php echo $room['room_number']; ?></p>
+                        <p class="text-amber-500 font-bold">$<?php echo number_format($room['price'], 2); ?>/night</p>
+                        <p class="text-gray-600">Status: 
+                            <span class="<?php 
+                                echo $room['status'] === 'available' ? 'text-green-500' : 
+                                    ($room['status'] === 'booked' ? 'text-amber-500' : 'text-red-500'); 
+                                ?>">
+                                <?php echo ucfirst($room['status']); ?>
+                            </span>
+                        </p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="viewRoom(<?php echo $room['id']; ?>)" 
+                                class="text-teal-950 hover:text-teal-800">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="editRoom(<?php echo $room['id']; ?>)" 
+                                class="text-blue-500 hover:text-blue-700">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteRoom(<?php echo $room['id']; ?>)" 
+                                class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
+        <?php endwhile; ?>
+    </div>
+</div>
+
+<script>
+function viewRoom(roomId) {
+    window.location.href = `room-view.php?id=${roomId}`;
+}
+</script>
 
         <!-- Staff Management Section -->
         <div class="mb-8">

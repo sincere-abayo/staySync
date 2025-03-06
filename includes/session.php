@@ -22,3 +22,7 @@ function get_user_id() {
 function get_user_role() {
     return $_SESSION['user_role'] ?? null;
 }
+
+function is_logged_in() {
+    return isset($_SESSION['user_id']);
+}

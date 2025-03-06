@@ -8,6 +8,8 @@ require_once '../includes/session.php';
 ?>
 <head>
     <meta name="viewport" content="width=], initial-scale=1.0">
+    <title>Room || Dashboard</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
@@ -29,6 +31,7 @@ require_once '../includes/session.php';
     <table class="min-w-full">
         <thead class="bg-teal-950 text-white">
             <tr>
+                <th class="px-6 py-3 text-left">#</th>
                 <th class="px-6 py-3 text-left">Room Number</th>
                 <th class="px-6 py-3 text-left">Room Type</th>
                 <th class="px-6 py-3 text-left">Description</th>
@@ -41,9 +44,11 @@ require_once '../includes/session.php';
         <tbody class="divide-y divide-gray-200">
             <?php
             $rooms = $conn->query("SELECT * FROM rooms ORDER BY room_number");
+            $a = 1;
             while ($room = $rooms->fetch_assoc()):
             ?>
             <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4"><?php echo $a++ ?></td>
                 <td class="px-6 py-4"><?php echo $room['room_number']; ?></td>
                 <td class="px-6 py-4"><?php echo $room['room_type']; ?></td>
                 <td class="px-6 py-4"><?php echo $room['description']; ?></td>
@@ -58,78 +63,127 @@ require_once '../includes/session.php';
                     </span>
                 </td>
                 <td class="px-6 py-4">
-                    <div class="flex space-x-2">
-                        <button onclick="editRoom(<?php echo $room['id']; ?>)" 
-                                class="text-blue-500 hover:text-blue-700">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="deleteRoom(<?php echo $room['id']; ?>)" 
-                                class="text-red-500 hover:text-red-700">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
+    <div class="flex space-x-2">
+        <button onclick="viewRoom(<?php echo $room['id']; ?>)" 
+                class="text-teal-950 hover:text-teal-800" 
+                title="View Room Details">
+            <i class="fas fa-eye"></i>
+        </button>
+        <button onclick="editRoom(<?php echo $room['id']; ?>)" 
+                class="text-blue-500 hover:text-blue-700"
+                title="Edit Room">
+            <i class="fas fa-edit"></i>
+        </button>
+        <button onclick="deleteRoom(<?php echo $room['id']; ?>)" 
+                class="text-red-500 hover:text-red-700"
+                title="Delete Room">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+</td>
+
             </tr>
             <?php endwhile; ?>
         </tbody>
     </table>
 </div>
+
 <!-- Edit Room Modal -->
 <div id="editRoomModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
     <div class="relative top-20 mx-auto p-5 border w-1/2 shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <h3 class="text-lg font-bold text-teal-950 mb-4">Edit Room</h3>
-            <form id="editRoomForm" enctype="multipart/form-data" class="space-y-4">
+            <form id="editRoomForm" class="space-y-4" enctype="multipart/form-data">
                 <input type="hidden" id="edit_room_id" name="room_id">
                 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Room Number</label>
-                    <input type="text" id="edit_room_number" name="room_number" required 
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Room Number</label>
+                        <input type="text" id="edit_room_number" name="room_number" required 
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Floor Number</label>
+                        <input type="number" id="edit_floor_number" name="floor_number" required 
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+                    </div>
                 </div>
-                
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Room Type</label>
+                        <select id="edit_room_type" name="room_type" required 
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+                            <option value="Standard">Standard Room</option>
+                            <option value="Deluxe">Deluxe Room</option>
+                            <option value="Suite">Suite Room</option>
+                            <option value="Executive">Executive Suite</option>
+                            <option value="Family">Family Room</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">View Type</label>
+                        <select id="edit_view_type" name="view_type" required 
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+                            <option value="City">City View</option>
+                            <option value="Ocean">Ocean View</option>
+                            <option value="Garden">Garden View</option>
+                            <option value="Pool">Pool View</option>
+                            <option value="Mountain">Mountain View</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Price per Night ($)</label>
+                        <input type="number" id="edit_price" name="price" required 
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Room Size (sq ft)</label>
+                        <input type="number" id="edit_size" name="size" required 
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Capacity (persons)</label>
+                        <input type="number" id="edit_capacity" name="capacity" required 
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+                    </div>
+                </div>
+
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Room Type</label>
-                    <select id="edit_room_type" name="room_type" required 
+                    <label class="block text-sm font-medium text-gray-700">Bed Configuration</label>
+                    <select id="edit_bed_config" name="bed_config" required 
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
-                        <option value="Standard">Standard Room</option>
-                        <option value="Deluxe">Deluxe Room</option>
-                        <option value="Suite">Suite Room</option>
-                        <option value="Executive">Executive Suite</option>
-                        <option value="Family">Family Room</option>
+                        <option value="1 King">1 King Bed</option>
+                        <option value="2 Queen">2 Queen Beds</option>
+                        <option value="2 Single">2 Single Beds</option>
+                        <option value="1 King 1 Single">1 King + 1 Single Bed</option>
+                        <option value="3 Single">3 Single Beds</option>
                     </select>
                 </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Price per Night ($)</label>
-                    <input type="number" id="edit_price" name="price" required 
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="edit_is_accessible" name="is_accessible" 
+                           class="rounded border-gray-300 text-teal-950 focus:ring-teal-200">
+                    <label for="edit_is_accessible" class="text-sm font-medium text-gray-700">
+                        Accessible Room (Handicap Friendly)
+                    </label>
                 </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Room Size (sq ft)</label>
-                    <input type="number" id="edit_size" name="size" required 
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Capacity (persons)</label>
-                    <input type="number" id="edit_capacity" name="capacity" required 
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
-                </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Amenities</label>
                     <textarea id="edit_amenities" name="amenities" rows="3" 
                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200"></textarea>
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Description</label>
                     <textarea id="edit_description" name="description" rows="3" required 
                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200"></textarea>
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Current Image</label>
                     <img id="current_room_image" src="" alt="Room Image" class="w-full h-40 object-cover rounded-md mb-2">
@@ -137,7 +191,6 @@ require_once '../includes/session.php';
                            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
                 </div>
 
-                <input type="hidden" name="action" value="update">
                 <div class="flex justify-end space-x-3">
                     <button type="button" onclick="closeEditModal()" 
                             class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
@@ -153,73 +206,118 @@ require_once '../includes/session.php';
     </div>
 </div>
 
+
     <!-- Add Room Modal -->
     <div id="addRoomModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
         <div class="relative top-20 mx-auto p-5 border w-1/2 shadow-lg rounded-md bg-white">
             <div class="mt-3">
                 <h3 class="text-lg font-bold text-teal-950 mb-4">Add New Room</h3>
-                <form id="roomForm" enctype="multipart/form-data" class="space-y-4" >
-    <div>
-        <label class="block text-sm font-medium text-gray-700">Room Number</label>
-        <input type="text" name="room_number" required 
-               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+             <form id="roomForm" enctype="multipart/form-data" class="space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Room Number</label>
+            <input type="text" name="room_number" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Floor Number</label>
+            <input type="number" name="floor_number" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+        </div>
     </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Room Type</label>
+            <select name="room_type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+                <option value="Standard">Standard Room</option>
+                <option value="Deluxe">Deluxe Room</option>
+                <option value="Suite">Suite Room</option>
+                <option value="Executive">Executive Suite</option>
+                <option value="Family">Family Room</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">View Type</label>
+            <select name="view_type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+                <option value="City">City View</option>
+                <option value="Ocean">Ocean View</option>
+                <option value="Garden">Garden View</option>
+                <option value="Pool">Pool View</option>
+                <option value="Mountain">Mountain View</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Price per Night ($)</label>
+            <input type="number" name="price" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Room Size (sq ft)</label>
+            <input type="number" name="size" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Capacity (persons)</label>
+            <input type="number" name="capacity" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+        </div>
+    </div>
+
     <div>
-        <label class="block text-sm font-medium text-gray-700">Room Type</label>
-        <select name="room_type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
-            <option value="Standard">Standard Room</option>
-            <option value="Deluxe">Deluxe Room</option>
-            <option value="Suite">Suite Room</option>
-            <option value="Executive">Executive Suite</option>
-            <option value="Family">Family Room</option>
+        <label class="block text-sm font-medium text-gray-700">Bed Configuration</label>
+        <select name="bed_config" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+            <option value="1 King">1 King Bed</option>
+            <option value="2 Queen">2 Queen Beds</option>
+            <option value="2 Single">2 Single Beds</option>
+            <option value="1 King 1 Single">1 King + 1 Single Bed</option>
+            <option value="3 Single">3 Single Beds</option>
         </select>
     </div>
-    <div>
-        <label class="block text-sm font-medium text-gray-700">Price per Night ($)</label>
-        <input type="number" name="price" required 
-               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
+
+    <div class="flex items-center space-x-2">
+        <input type="checkbox" id="is_accessible" name="is_accessible" 
+               class="rounded border-gray-300 text-teal-950 focus:ring-teal-200">
+        <label for="is_accessible" class="text-sm font-medium text-gray-700">
+            Accessible Room (Handicap Friendly)
+        </label>
     </div>
-    <div>
-        <label class="block text-sm font-medium text-gray-700">Room Size (meters)</label>
-        <input type="number" name="size" required 
-               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
-    </div>
-    <div>
-        <label class="block text-sm font-medium text-gray-700">Capacity (persons)</label>
-        <input type="number" name="capacity" required 
-               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200">
-    </div>
+
     <div>
         <label class="block text-sm font-medium text-gray-700">Amenities</label>
         <textarea name="amenities" rows="3" 
                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200"
                   placeholder="WiFi, TV, Mini Bar, etc."></textarea>
     </div>
+
     <div>
         <label class="block text-sm font-medium text-gray-700">Description</label>
         <textarea name="description" rows="3" required 
                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-950 focus:ring focus:ring-teal-200"></textarea>
     </div>
+
     <div>
         <label class="block text-sm font-medium text-gray-700">Room Image</label>
         <input type="file" name="image" accept="image/*" 
                class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
     </div>
-
     <input type="hidden" name="action" value="add">
-    
-    <div class="flex justify-end space-x-3 mt-6">
-    <button type="button" onclick="closeModal()" 
-            class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
-        Cancel
-    </button>
-    <button type="submit" 
-            class="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600">
-        Add Room
-    </button>
-</div>
 
+    <div class="flex justify-end space-x-3">
+        <button type="button" onclick="closeModal()" 
+                class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+            Cancel
+        </button>
+        <button type="submit" 
+                class="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600">
+            Add Room
+        </button>
+    </div>
 </form>
+
 
             </div>
         </div>
@@ -268,8 +366,8 @@ document.getElementById('roomForm').addEventListener('submit', function(e) {
                 text: 'The new room has been added to the system',
                 confirmButtonColor: '#f97316'
             }).then(() => {
-                closeModal();
-                location.reload();
+                // closeModal();
+                // location.reload();
             });
         } else {
             Swal.fire({
@@ -332,7 +430,6 @@ function deleteRoom(roomId) {
 }
 
 function editRoom(roomId) {
-    // Show loading state
     Swal.fire({
         title: 'Loading Room Details',
         didOpen: () => {
@@ -341,25 +438,30 @@ function editRoom(roomId) {
     });
 
     fetch(`../handlers/room_handler.php?action=get&id=${roomId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
             if (data) {
                 document.getElementById('edit_room_id').value = data.id;
                 document.getElementById('edit_room_number').value = data.room_number;
                 document.getElementById('edit_room_type').value = data.room_type;
+                document.getElementById('edit_floor_number').value = data.floor_number;
+                document.getElementById('edit_view_type').value = data.view_type;
                 document.getElementById('edit_price').value = data.price;
                 document.getElementById('edit_size').value = data.size;
                 document.getElementById('edit_capacity').value = data.capacity;
+                document.getElementById('edit_bed_config').value = data.bed_config;
+                document.getElementById('edit_is_accessible').checked = data.is_accessible == 1;
                 document.getElementById('edit_amenities').value = data.amenities;
                 document.getElementById('edit_description').value = data.description;
+
+                
+                // Update image display with correct path
                 if (data.image) {
-                    document.getElementById('current_room_image').src = '../' + data.image;
+                    const currentImage = document.getElementById('current_room_image');
+                    currentImage.src = `../${data.image}`;
+                    currentImage.style.display = 'block';
                 }
+                
                 document.getElementById('editRoomModal').classList.remove('hidden');
                 Swal.close();
             }
@@ -373,6 +475,8 @@ function editRoom(roomId) {
             });
         });
 }
+
+
 
 function closeEditModal() {
     document.getElementById('editRoomModal').classList.add('hidden');
@@ -406,14 +510,21 @@ document.getElementById('editRoomForm').addEventListener('submit', function(e) {
         Swal.fire({
             icon: 'success',
             title: 'Room Updated',
-            text: 'Room details have been updated successfully',
+            text: data.message,
             confirmButtonColor: '#f97316'
         }).then(() => {
             closeEditModal();
             location.reload();
         });
-    } else {
-        throw new Error(data.message || 'Update failed');
+    } 
+    
+    else {
+        Swal.fire({
+            icon: 'error',
+            title: 'Update Failed',
+            text: data.message,
+            confirmButtonColor: '#f97316'
+        });
     }
 })
 .catch(error => {
@@ -426,6 +537,10 @@ document.getElementById('editRoomForm').addEventListener('submit', function(e) {
     });
 });
 });
+
+function viewRoom(roomId) {
+    window.location.href = `room-view.php?id=${roomId}`;
+}
 
 
 // Close modal when clicking outside

@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $response = [
                 'status' => 'success',
-                'redirect' => $user['role'] === 'manager' ? 'manager/index.php' : 'index.php'
+                'redirect' => $user['role'] === 'manager' ? 'manager/index.php' : 'client/index.php'
             ];
         } else {
             $response = ['status' => 'error', 'message' => 'Invalid password'];
