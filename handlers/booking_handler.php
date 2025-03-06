@@ -180,12 +180,43 @@ $adults, $kids
                             $card_number = filter_var($_POST['card_number'], FILTER_SANITIZE_STRING);
                             $expiry_date = filter_var($_POST['expiry_date'], FILTER_SANITIZE_STRING);
                             $cvv = filter_var($_POST['cvv'], FILTER_SANITIZE_STRING);
+
+                            // validate cvv
+                            if (strlen($cvv) !== 3) {
+                                throw new Exception('Invalid CVV, must be 3 digits');
+                            }
                             
                             // Basic card validation
                             if (strlen($card_number) !== 16) {
                                 throw new Exception('Invalid card number, must be 16 digits');
                             }
-                            
+
+                          // Validate and format expiry date
+$expiry_date = preg_replace('/[^0-9]/', '', $_POST['expiry_date']); // Remove non-digits
+
+if (strlen($expiry_date) === 4) {
+    // Add slash if not present
+    $expiry_date = substr($expiry_date, 0, 2) . '/' . substr($expiry_date, 2);
+} 
+
+// Validate format and length
+if (strlen($expiry_date) !== 5 || !preg_match('/^(0[1-9]|1[0-2])\/([0-9]{2})$/', $expiry_date)) {
+    throw new Exception('Invalid expiry date format. Use MM/YY');
+}
+
+// Validate expiry date is not in the past
+$expiry = explode('/', $expiry_date);
+$expiry_month = $expiry[0];
+$expiry_year = '20' . $expiry[1];
+$current_year = date('Y');
+$current_month = date('m');
+
+if ($expiry_year < $current_year || 
+    ($expiry_year == $current_year && $expiry_month < $current_month)) {
+    throw new Exception('Card has expired');
+}
+
+    // Process payment
                             $payment_details = json_encode([
                                 'card' => substr($card_number, -4),
                                 'expiry' => $expiry_date,

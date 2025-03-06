@@ -2,9 +2,9 @@
 require_once '../includes/session.php';
 require_once '../includes/session_timeout.php';
 require_once '../config/database.php';
-
+check_session_timeout();
 if (!is_logged_in()) {
-    header('Location: login.php');
+    header('Location: ../login.html');
     exit;
 }
 
@@ -136,23 +136,89 @@ $user_id = get_user_id();
                             <span>Total</span>
                             <span>$<?php echo number_format($grand_total, 2); ?></span>
                         </div>
+                        Countdown Timer & Reminders Display:
+<div class="booking-status-tracker">
+    <?php
+    $today = new DateTime();
+    $check_in = new DateTime($booking['check_in']);
+    $interval = $today->diff($check_in);
+    $days_remaining = $interval->days;
+    ?>
+    
+    <?php if($booking['booking_status'] == 'confirmed' && $check_in > $today): ?>
+        <div class="bg-blue-50 p-4 rounded-lg">
+            <h4 class="font-medium text-blue-800">
+                <i class="fas fa-clock mr-2"></i>
+                Check-in in <?php echo $days_remaining; ?> days
+            </h4>
+            <div class="mt-2 space-y-2">
+                <button onclick="viewRoomFeatures(<?php echo $booking['room_id']; ?>)" 
+                        class="text-sm text-blue-600 hover:underline">
+                    View Room Features
+                </button>
+                <button onclick="requestSupport(<?php echo $booking['id']; ?>)" 
+                        class="text-sm text-blue-600 hover:underline">
+                    Need Assistance?
+                </button>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
                         <!-- Add this after the Payment Summary section -->
-<?php if($booking['booking_status'] == 'pending' && $booking['payment_status'] == 'pending'): ?>
-    <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-4">
-        <div class="flex items-center justify-between">
-            <div>
+                <?php if($booking['booking_status'] == 'pending' && $booking['payment_status'] == 'pending'): ?>
+                <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-4">
+                <div class="flex items-center justify-between">
+                <div>
                 <h4 class="font-medium text-amber-800">Payment Required</h4>
                 <p class="text-sm text-amber-600">50% advance payment: $<?php echo number_format($grand_total * 0.5, 2); ?></p>
-            </div>
-            <button onclick="processPayment(<?php echo $booking['id']; ?>, <?php echo $grand_total * 0.5; ?>)"
+                </div>
+                <button onclick="processPayment(<?php echo $booking['id']; ?>, <?php echo $grand_total * 0.5; ?>)"
                     class="bg-amber-500 text-white px-6 py-2 rounded-lg hover:bg-amber-600">
                 Pay Now
-            </button>
+                </button>
         </div>
     </div>
 <?php endif; ?>
 
                     </div>
+<!-- Add after the Payment Summary section -->
+<?php if($booking['booking_status'] == 'confirmed' || $booking['payment_status'] == 'partial'): 
+    // Get payment details
+    $payment_query = $conn->query("
+        SELECT * FROM payments 
+        WHERE booking_id = {$booking['id']} 
+        ORDER BY payment_date DESC 
+        LIMIT 1
+    ");
+    $payment = $payment_query->fetch_assoc();
+    $payment_details = json_decode($payment['payment_details'], true);
+?>
+    <div class="bg-green-50 border border-green-200 p-4 rounded-lg mb-4">
+        <h4 class="font-medium text-green-800 mb-2">Payment Information</h4>
+        <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+                <p class="text-gray-600">Payment Method</p>
+                <p class="font-medium"><?php 
+                    echo $payment['payment_method'] === 'credit_card' ? 
+                        'Card ending in ' . $payment_details['card'] : 
+                        $payment_details['network'] . ' (' . $payment_details['phone'] . ')'; 
+                ?></p>
+            </div>
+            <div>
+                <p class="text-gray-600">Transaction ID</p>
+                <p class="font-medium"><?php echo $payment['transaction_id']; ?></p>
+            </div>
+            <div>
+                <p class="text-gray-600">Amount Paid</p>
+                <p class="font-medium text-green-600">$<?php echo number_format($payment['amount'], 2); ?></p>
+            </div>
+            <div>
+                <p class="text-gray-600">Payment Date</p>
+                <p class="font-medium"><?php echo date('M d, Y H:i', strtotime($payment['payment_date'])); ?></p>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
                     <!-- Action Buttons -->
                     <div class="flex justify-end space-x-3">
@@ -367,13 +433,14 @@ function processPayment(bookingId, amount) {
 }
 
 function showCardPayment(bookingId, amount) {
-    Swal.fire({
+    const cardForm = () => Swal.fire({
         title: 'Card Payment',
         html: `
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
                     <input type="text" id="card_number" class="swal2-input" 
+                           value="${document.getElementById('card_number')?.value || ''}"
                            placeholder="1234 5678 9012 3456"
                            autocomplete="cc-number"
                            maxlength="16">
@@ -382,6 +449,7 @@ function showCardPayment(bookingId, amount) {
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
                         <input type="text" id="expiry_date" class="swal2-input" 
+                               value="${document.getElementById('expiry_date')?.value || ''}"
                                placeholder="MM/YY"
                                autocomplete="cc-exp"
                                maxlength="5">
@@ -389,14 +457,11 @@ function showCardPayment(bookingId, amount) {
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">CVV</label>
                         <input type="text" id="cvv" class="swal2-input" 
+                               value="${document.getElementById('cvv')?.value || ''}"
                                placeholder="123"
                                autocomplete="cc-csc"
                                maxlength="3">
                     </div>
-                </div>
-                <div class="text-sm text-gray-500 flex items-center">
-                    <i class="fas fa-lock mr-2"></i>
-                    Secure payment processing
                 </div>
             </div>
         `,
@@ -405,9 +470,19 @@ function showCardPayment(bookingId, amount) {
         confirmButtonColor: '#f97316',
         showLoaderOnConfirm: true,
         preConfirm: () => {
-            submitPayment(bookingId, amount, 'card');
+            return submitPayment(bookingId, amount, 'card')
+                .catch(error => {
+                    Swal.showValidationMessage(error.message);
+                    return false;
+                });
+        }
+    }).then((result) => {
+        if (result.isDismissed && result.dismiss === 'error') {
+            cardForm(); // Reopen form with existing data
         }
     });
+
+    cardForm();
 }
 
 function showMobileMoneyPayment(bookingId, amount) {
@@ -469,7 +544,7 @@ function submitPayment(bookingId, amount, paymentMethod) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            Swal.fire({
+            return Swal.fire({
                 icon: 'success',
                 title: 'Payment Successful',
                 text: 'Your booking has been confirmed!',
@@ -478,24 +553,70 @@ function submitPayment(bookingId, amount, paymentMethod) {
                 location.reload();
             });
         } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Payment not done',
-                text: data.message || 'An error occurred during payment',
-                confirmButtonColor: '#f97316'
-            });
+            throw new Error(data.message || 'Payment processing failed');
         }
     })
     .catch(error => {
-        console.log(error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Payment Failed',
-            text: 'An error occurred during payment processing',
-            confirmButtonColor: '#f97316'
-        });
+        throw new Error(error.message || 'An error occurred during payment processing');
     });
 
+}
+
+// view room Features
+function viewRoomFeatures(roomId) {
+    fetch(`../handlers/room_handler.php?action=get_features&room_id=${roomId}`)
+    .then(response => response.json())
+    .then(data => {
+        Swal.fire({
+            title: 'Room Features',
+            html: `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-medium">Amenities</h4>
+                            <ul class="list-disc pl-4">
+                                ${data.amenities.map(a => `<li>${a}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">Services</h4>
+                            <ul class="list-disc pl-4">
+                                ${data.services.map(s => `<li>${s}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <h4 class="font-medium">Special Instructions</h4>
+                        <p>${data.instructions}</p>
+                    </div>
+                </div>
+            `
+        });
+    });
+}
+
+// request requestSupport
+function requestSupport(bookingId) {
+    Swal.fire({
+        title: 'Contact Support',
+        html: `
+            <div class="space-y-4">
+                <select id="support_type" class="swal2-input">
+                    <option value="general">General Inquiry</option>
+                    <option value="checkin">Check-in Assistance</option>
+                    <option value="special">Special Requests</option>
+                    <option value="modification">Booking Modification</option>
+                </select>
+                <textarea id="support_message" class="swal2-textarea" 
+                          placeholder="How can we help you?"></textarea>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Submit Request',
+        preConfirm: () => {
+            return submitSupportRequest(bookingId);
+        }
+    });
 }
 
 </script>
