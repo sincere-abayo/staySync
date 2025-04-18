@@ -2,7 +2,7 @@
 require_once '../includes/session.php';
 // require_once '../includes/session_timeout.php';
 require_once '../config/database.php';
-
+check_login();
 // check_admin();
 // check_session_timeout();
 
@@ -52,7 +52,20 @@ include_once 'includes/sidebar.php';
 
 <!-- Main Content -->
 <div class="flex-1 overflow-auto">
-    <div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-8">
+        <?php
+        // Display payment message if set
+        if (isset($_SESSION['payment_message'])) {
+            $message = $_SESSION['payment_message'];
+            $alertClass = $message['type'] === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+            echo '<div class="' . $alertClass . ' p-4 rounded-lg mb-6">';
+            echo '<p>' . htmlspecialchars($message['text']) . '</p>';
+            echo '</div>';
+            
+            // Clear the message
+            unset($_SESSION['payment_message']);
+        }
+        ?>
         <!-- Back Button and Booking ID -->
         <div class="flex justify-between items-center mb-6">
             <button onclick="history.back()" class="flex items-center text-teal-950 hover:text-amber-500">
@@ -89,9 +102,16 @@ include_once 'includes/sidebar.php';
                     </div>
                 </div>
                 <div>
-                <button onclick="openEditBookingModal(<?php echo $booking_id; ?>)" class="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 mr-2">
-                        <i class="fas fa-edit mr-2"></i>Edit Booking
-                    </button>
+
+                <!-- Add this inside your booking list loop, next to the cancel button -->
+<?php if ($booking['booking_status'] === 'pending' || $booking['booking_status'] === 'confirmed'): ?>
+    <button onclick="openEditBookingModal(<?php echo $booking['id']; ?>)" 
+            class="text-blue-500 hover:text-blue-700 mr-2">
+        <i class="fas fa-edit"></i> Edit
+    </button>
+<?php endif; ?>
+
+                
 
                     <?php if ($booking['booking_status'] !== 'cancelled' && $booking['booking_status'] !== 'completed'): ?>
                         <button onclick="updateStatus(<?php echo $booking_id; ?>, 'cancelled')" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
@@ -144,8 +164,8 @@ include_once 'includes/sidebar.php';
                     </div>
                 </div>
 
-                <!-- Booking Details -->
-                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                              <!-- Booking Details -->
+                              <div class="bg-white rounded-lg shadow-lg overflow-hidden">
                     <div class="p-4 bg-teal-950 text-white">
                         <h3 class="text-lg font-semibold">Booking Details</h3>
                     </div>
@@ -159,6 +179,13 @@ include_once 'includes/sidebar.php';
                                 <div class="mb-4">
                                     <p class="text-gray-500 text-sm">Duration</p>
                                     <p class="font-medium text-teal-950"><?php echo $duration; ?> night<?php echo $duration !== 1 ? 's' : ''; ?></p>
+                                </div>
+                                <div class="mb-4">
+                                    <p class="text-gray-500 text-sm">Number of Guests</p>
+                                    <p class="font-medium text-teal-950">
+                                        <?php echo $booking['adults']; ?> Adult<?php echo $booking['adults'] !== 1 ? 's' : ''; ?>, 
+                                        <?php echo $booking['kids']; ?> Child<?php echo $booking['kids'] !== 1 ? 'ren' : ''; ?>
+                                    </p>
                                 </div>
                                 <div>
                                     <p class="text-gray-500 text-sm">Payment Status</p>
@@ -189,6 +216,7 @@ include_once 'includes/sidebar.php';
                         </div>
                     </div>
                 </div>
+
 
                <!-- Booking Requests -->
 <div class="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -362,9 +390,7 @@ include_once 'includes/sidebar.php';
                  <div class="bg-white rounded-lg shadow-lg overflow-hidden">
                     <div class="p-4 bg-teal-950 text-white flex justify-between items-center">
                         <h3 class="text-lg font-semibold">Additional Services</h3>
-                        <button onclick="addService(<?php echo $booking_id; ?>)" class="bg-amber-500 text-white px-3 py-1 rounded hover:bg-amber-600 text-sm">
-                            <i class="fas fa-plus mr-1"></i> Add Service
-                        </button>
+                        
                     </div>
                     <div class="p-6">
                         <?php
@@ -455,6 +481,8 @@ include_once 'includes/sidebar.php';
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script >
 
+
+
 // Edit booking functions
 function openEditBookingModal(bookingId) {
     // Fetch booking details
@@ -501,6 +529,49 @@ function openEditBookingModal(bookingId) {
                 confirmButtonColor: '#f97316'
             });
         });
+}
+
+function cancelBooking(bookingId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f97316',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, cancel it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append('action', 'cancel');
+            formData.append('booking_id', bookingId);
+            
+            fetch('../handlers/booking_handler.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Cancelled!',
+                        text: 'Your booking has been cancelled.',
+                        confirmButtonColor: '#f97316'
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: data.message,
+                        confirmButtonColor: '#f97316'
+                    });
+                }
+            });
+        }
+    });
 }
 
 function closeEditModal() {
@@ -589,59 +660,6 @@ document.getElementById('editBookingForm').addEventListener('submit', function(e
 });
 
 
-// function updateBooking(bookingData) {
-//         // Show loading state
-//         Swal.fire({
-//         title: 'Updating Booking',
-//         text: 'Please wait...',
-//         allowOutsideClick: false,
-//         didOpen: () => {
-//             Swal.showLoading();
-//         }
-//     });
-
-//     // Send booking data to server
-//     fetch('../handlers/booking_handler.php', {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/json'
-//         },
-//         body: JSON.stringify({
-//             action: 'edit_booking',
-//             ...bookingData
-//         })
-//     })
-//     .then(response => response.json())
-//     .then(data => {
-//         if (data.status === 'success') {
-//             Swal.fire({
-//                 icon: 'success',
-//                 title: 'Booking Updated',
-//                 text: data.message,
-//                 confirmButtonColor: '#f97316'
-//             }).then(() => {
-//                 location.reload();
-//             });
-//         } else {
-//             Swal.fire({
-//                 icon: 'error',
-//                 title: 'Error',
-//                 text: data.message,
-//                 confirmButtonColor: '#f97316'
-//             });
-//         }
-//     })
-//     .catch(error => {
-//         console.error('Error:', error);
-//         Swal.fire({
-//             icon: 'error',
-//             title: 'Error',
-//             text: 'An unexpected error occurred. Please try again.',
-//             confirmButtonColor: '#f97316'
-//         });
-//     });
-// }
-
 function updateStatus(id, status) {
     const statusLabels = {
         'pending': 'Pending',
@@ -671,47 +689,49 @@ function updateStatus(id, status) {
                 }
             });
 
+            // Create FormData instead of JSON
+            const formData = new FormData();
+            formData.append('action', 'update_status');
+            formData.append('id', id);
+            formData.append('status', status);
+
             // Send status update to server
             fetch('../handlers/booking_handler.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    action: 'update_status',
-                    id: id,
-                    status: status
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Status Updated',
-                        text: data.message,
-                        confirmButtonColor: '#f97316'
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message,
-                        confirmButtonColor: '#f97316'
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'An unexpected error occurred. Please try again.',
-                    confirmButtonColor: '#f97316'
-                });
-            });
+    method: 'POST',
+    body: formData
+})
+.then(response => response.text()) // <- get raw response first
+.then(text => {
+    console.log('Raw response:', text);
+    const data = JSON.parse(text); // now manually parse
+    if (data.status === 'success') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Status Updated',
+            text: data.message,
+            confirmButtonColor: '#f97316'
+        }).then(() => {
+            location.reload();
+        });
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: data.message,
+            confirmButtonColor: '#f97316'
+        });
+    }
+})
+.catch(error => {
+    console.error('Error parsing or fetching:', error);
+    Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'An unexpected error occurred. Please try again.',
+        confirmButtonColor: '#f97316'
+    });
+});
+
         }
     });
 }
@@ -720,112 +740,58 @@ function recordPayment(bookingId) {
     Swal.fire({
         title: 'Record Payment',
         html: `
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
-                <input type="number" id="payment_amount" class="swal2-input w-full" step="0.01" min="0.01">
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                <select id="payment_method" class="swal2-input w-full">
-                    <option value="cash">Cash</option>
-                    <option value="credit_card">Credit Card</option>
-                    <option value="debit_card">Debit Card</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="paypal">PayPal</option>
-                </select>
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Reference Number</label>
-                <input type="text" id="reference_number" class="swal2-input w-full">
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
-                <input type="date" id="payment_date" class="swal2-input w-full" value="${new Date().toISOString().split('T')[0]}">
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea id="payment_notes" class="swal2-textarea w-full"></textarea>
-            </div>
+            <form id="paymentForm" action="../handlers/payment_handler.php" method="POST">
+                <input type="hidden" name="action" value="add">
+                <input type="hidden" name="booking_id" value="${bookingId}">
+                <input type="hidden" name="redirect_url" value="../manager/booking_details.php?id=${bookingId}">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                    <input type="number" name="amount" id="payment_amount" class="swal2-input w-full" step="0.01" min="0.01" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                    <select name="payment_method" id="payment_method" class="swal2-input w-full" required>
+                        <option value="cash">Cash</option>
+                        <option value="credit_card">Credit Card</option>
+                        <option value="debit_card">Debit Card</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="paypal">PayPal</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Reference Number</label>
+                    <input type="text" name="reference_number" id="reference_number" class="swal2-input w-full">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
+                    <input type="date" name="payment_date" id="payment_date" class="swal2-input w-full" value="${new Date().toISOString().split('T')[0]}" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea name="notes" id="payment_notes" class="swal2-textarea w-full"></textarea>
+                </div>
+            </form>
         `,
         showCancelButton: true,
         confirmButtonText: 'Record Payment',
         confirmButtonColor: '#f97316',
         preConfirm: () => {
-            return {
-                booking_id: bookingId,
-                amount: document.getElementById('payment_amount').value,
-                payment_method: document.getElementById('payment_method').value,
-                reference_number: document.getElementById('reference_number').value,
-                payment_date: document.getElementById('payment_date').value,
-                notes: document.getElementById('payment_notes').value
-            };
+            // Validate amount
+            const amount = document.getElementById('payment_amount').value;
+            if (!amount || parseFloat(amount) <= 0) {
+                Swal.showValidationMessage('Please enter a valid payment amount');
+                return false;
+            }
+            return true;
         }
     }).then((result) => {
         if (result.isConfirmed) {
-            // Validate amount
-            if (!result.value.amount || parseFloat(result.value.amount) <= 0) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid Amount',
-                    text: 'Please enter a valid payment amount',
-                    confirmButtonColor: '#f97316'
-                });
-                return;
-            }
-            
-            // Show loading state
-            Swal.fire({
-                title: 'Recording Payment',
-                text: 'Please wait...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            // Send payment data to server
-            fetch('../handlers/payment_handler.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    action: 'add',
-                    ...result.value
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Payment Recorded',
-                        text: data.message,
-                        confirmButtonColor: '#f97316'
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message,
-                        confirmButtonColor: '#f97316'
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'An unexpected error occurred. Please try again.',
-                    confirmButtonColor: '#f97316'
-                });
-            });
+            document.getElementById('paymentForm').submit();
         }
     });
 }
+
 
 function addService(bookingId) {
     // Fetch available services

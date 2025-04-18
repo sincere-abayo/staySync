@@ -1,7 +1,7 @@
 <!-- Sidebar -->
 <div class="bg-teal-950 text-white w-64 flex-shrink-0 transition-all duration-300" id="sidebar">
     <div class="p-4 border-b border-amber-500">
-        <img src="images/logo.png" alt="Logo" class="w-20 mx-auto mb-4">
+        <img src="../images/logo.png" alt="Logo" class="w-20 mx-auto mb-4">
         <h1 class="text-2xl font-bold text-center">StaySync </h1>
     </div>
     
@@ -53,13 +53,16 @@
     </nav>
 
     <div class="absolute bottom-0 w-64 p-4 border-t border-amber-500">
-        <div class="flex items-center space-x-3 mb-4">
-            <i class="fas fa-user-circle text-2xl"></i>
-            <div>
-                <p class="font-medium">Welcome,</p>
-                <p class="text-sm"><?php echo $_SESSION['user_name']; ?></p>
-            </div>
+    <div class="flex items-center space-x-3 mb-4">
+            <a href="profile.php" class="flex items-center space-x-3 hover:text-amber-500 transition-colors">
+                <i class="fas fa-user-circle text-2xl"></i>
+                <div>
+                    <p class="font-medium">Welcome,</p>
+                    <p class="text-sm"><?php echo $_SESSION['user_name']; ?></p>
+                </div>
+            </a>
         </div>
+
         <a href="../handlers/logout_handler.php" 
            class="block w-full bg-amber-500 text-center py-2 rounded-lg hover:bg-amber-600">
             Logout

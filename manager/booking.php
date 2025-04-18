@@ -221,14 +221,7 @@ include_once 'includes/sidebar.php';
                                             class="text-teal-950 hover:text-teal-800" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button onclick="editBooking(<?php echo $booking['id']; ?>)" 
-                                            class="text-blue-500 hover:text-blue-700" title="Edit Booking">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button onclick="deleteBooking(<?php echo $booking['id']; ?>)" 
-                                            class="text-red-500 hover:text-red-700" title="Delete Booking">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                  
                                 </div>
                             </td>
                         </tr>

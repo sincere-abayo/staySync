@@ -1,8 +1,8 @@
 <?php
+header('Content-Type: application/json');
 require_once '../config/database.php';
 require_once '../includes/session.php';
 
-header('Content-Type: application/json');
 
 if (!is_logged_in()) {
     echo json_encode([
@@ -11,6 +11,7 @@ if (!is_logged_in()) {
     ]);
     exit;
 }
+
 
 switch($_POST['action'] ?? $_GET['action'] ?? '') {
     case 'book':
@@ -167,111 +168,67 @@ $adults, $kids
     // process payment
     case 'process_payment':
         try {
-            $booking_id = filter_var($_POST['booking_id'], FILTER_SANITIZE_NUMBER_INT);
-            $amount = filter_var($_POST['amount'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-            $payment_method = filter_var($_POST['payment_method'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            
-            // For card payments
-            if ($payment_method === 'card') {
-                // Validate card details
-                if (empty($_POST['card_number']) || empty($_POST['expiry_date']) || empty($_POST['cvv'])) {
-                    throw new Exception('All card details are required');
-                }
-                
-                $card_number = filter_var($_POST['card_number'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                $expiry_date = filter_var($_POST['expiry_date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                $cvv = filter_var($_POST['cvv'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-                // validate cvv
-                if (strlen($cvv) !== 3) {
-                    throw new Exception('Invalid CVV, must be 3 digits');
-                }
-                
-                // Basic card validation
-                if (strlen($card_number) !== 16) {
-                    throw new Exception('Invalid card number, must be 16 digits');
-                }
-
-              // Validate and format expiry date
-                $expiry_date = preg_replace('/[^0-9]/', '', $_POST['expiry_date']); // Remove non-digits
-
-                if (strlen($expiry_date) === 4) {
-                    // Add slash if not present
-                    $expiry_date = substr($expiry_date, 0, 2) . '/' . substr($expiry_date, 2);
-                } 
-
-                // Validate format and length
-                if (strlen($expiry_date) !== 5 || !preg_match('/^(0[1-9]|1[0-2])\/([0-9]{2})$/', $expiry_date)) {
-                    throw new Exception('Invalid expiry date format. Use MM/YY');
-                }
-
-                // Validate expiry date is not in the past
-                $expiry = explode('/', $expiry_date);
-                $expiry_month = $expiry[0];
-                $expiry_year = '20' . $expiry[1];
-                $current_year = date('Y');
-                $current_month = date('m');
-
-                if ($expiry_year < $current_year || 
-                    ($expiry_year == $current_year && $expiry_month < $current_month)) {
-                    throw new Exception('Card has expired');
-                }
-
-                // Process payment
-                $payment_details = json_encode([
-                    'card' => substr($card_number, -4),
-                    'expiry' => $expiry_date,
-                    'cvv' => $cvv
-                ]);
+            // Only handle JSON requests
+            $input = json_decode(file_get_contents('php://input'), true);
         
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    throw new Exception('Error processing card details');
-                }
-            } 
-            // For mobile money
-            else if ($payment_method === 'mobile_money') {
-                $phone_number = filter_var($_POST['phone_number'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                $network = filter_var($_POST['network'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                $payment_details = json_encode([
-                    'phone' => $phone_number,
-                    'network' => $network
-                ]);
+            if (!isset($input['action']) || $input['action'] !== 'add') {
+                throw new Exception('Invalid action');
             }
-            else {
-                throw new Exception('Invalid payment method');
+        
+            // Extract and sanitize
+            $booking_id = filter_var($input['booking_id'], FILTER_SANITIZE_NUMBER_INT);
+            $amount = filter_var($input['amount'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+            $payment_method = filter_var($input['payment_method'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $payment_date = filter_var($input['payment_date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $notes = filter_var($input['notes'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        
+            if (!$booking_id || !$amount || !$payment_method || !$payment_date) {
+                throw new Exception('Required payment fields are missing');
+            }
+        
+            // Create simple payment_details (you can expand this later based on method)
+            $payment_details = json_encode([
+                'method' => $payment_method,
+                'notes' => $notes
+            ]);
+        
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('Error encoding payment details');
             }
         
             $transaction_id = 'TXN' . time() . rand(100, 999);
         
-            // Create payment record
+            // Insert payment
             $stmt = $conn->prepare("
                 INSERT INTO payments (
                     booking_id, 
                     amount, 
                     payment_method,
                     payment_details,
+                    payment_date,
                     transaction_id,
                     payment_status
-                ) VALUES (?, ?, ?, ?, ?, 'completed')
+                ) VALUES (?, ?, ?, ?, ?, ?, 'completed')
             ");
         
             if (!$stmt) {
                 throw new Exception('Database preparation failed');
             }
         
-            $stmt->bind_param("idsss", 
+            $stmt->bind_param("idssss", 
                 $booking_id, 
                 $amount, 
                 $payment_method, 
                 $payment_details, 
+                $payment_date,
                 $transaction_id
             );
         
             if (!$stmt->execute()) {
-                throw new Exception('Payment record creation failed');
+                throw new Exception('Failed to record payment');
             }
         
-            // Update booking status
+            // Optionally update booking
             $update_result = $conn->query("
                 UPDATE bookings 
                 SET booking_status = 'confirmed', 
@@ -280,12 +237,12 @@ $adults, $kids
             ");
         
             if (!$update_result) {
-                throw new Exception('Booking status update failed');
+                throw new Exception('Failed to update booking status');
             }
         
             echo json_encode([
                 'status' => 'success',
-                'message' => 'Payment processed successfully',
+                'message' => 'Payment recorded successfully',
                 'transaction_id' => $transaction_id
             ]);
         
@@ -295,6 +252,7 @@ $adults, $kids
                 'message' => $e->getMessage()
             ]);
         }
+        
         break;
     
     case 'get_booking':
@@ -450,6 +408,45 @@ $adults, $kids
                             ]);
                         }
                         break;
+
+                        case 'update_status':
+                            try {
+                                if (!isset($_POST['id']) || !isset($_POST['status'])) {
+                                    throw new Exception('Invalid request data');
+                                }
+                    
+                                $booking_id = filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT);
+                                $status = filter_var($_POST['status'], FILTER_SANITIZE_STRING);
+                    
+                                $valid_statuses = ['pending', 'confirmed', 'cancelled', 'completed'];
+                                if (!in_array($status, $valid_statuses)) {
+                                    throw new Exception('Invalid status value');
+                                }
+                    
+                                $stmt = $conn->prepare("UPDATE bookings SET booking_status = ? WHERE id = ?");
+                                $stmt->bind_param("si", $status, $booking_id);
+                                if (!$stmt->execute()) {
+                                    throw new Exception('Failed to update booking status');
+                                }
+                    
+                                if ($status === 'completed') {
+                                    $update_check_in = $conn->prepare("UPDATE bookings SET check_in_status = 'checked_out' WHERE id = ?");
+                                    $update_check_in->bind_param("i", $booking_id);
+                                    $update_check_in->execute();
+                                }
+                    
+                                echo json_encode([
+                                    'status' => 'success',
+                                    'message' => 'Booking status updated successfully'
+                                ]);
+                            } catch (Exception $e) {
+                                echo json_encode([
+                                    'status' => 'error',
+                                    'message' => $e->getMessage()
+                                ]);
+                            }
+                            break;
+                    
                 
                     default:
                         echo json_encode([
