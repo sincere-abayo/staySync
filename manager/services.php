@@ -1,7 +1,6 @@
 <?php
 session_start();
 require_once '../config/database.php';
-require_once '../includes/session.php';
 // check_admin();
 
 ?>
@@ -53,6 +52,7 @@ require_once '../includes/session.php';
 </div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+
 function openModal() {
     Swal.fire({
         title: 'Add New Service',
@@ -71,7 +71,13 @@ function openModal() {
             formData.append('name', document.getElementById('serviceName').value);
             formData.append('description', document.getElementById('serviceDescription').value);
             formData.append('icon', document.getElementById('serviceIcon').value);
-            formData.append('image', document.getElementById('serviceImage').files[0]);
+            
+            // Check if a file was selected before appending
+            const fileInput = document.getElementById('serviceImage');
+            if (fileInput.files.length > 0) {
+                formData.append('image', fileInput.files[0]);
+            }
+            
             return formData;
         }
     }).then((result) => {
@@ -81,13 +87,36 @@ function openModal() {
     });
 }
 
-function submitService(formData) {
+    function submitService(formData) {
+          // Log the form data for debugging
+//   for (let pair of formData.entries()) {
+//         console.log(pair[0] + ': ' + pair[1]);
+//     }
     fetch('../handlers/services_handler.php', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(response => response.text())
+    .then(text => {
+        // Try to parse as JSON, but handle case where there might be PHP warnings
+        let data;
+        try {
+            // If there are PHP warnings, they'll be at the beginning of the response
+            // Try to extract just the JSON part
+            const jsonStart = text.indexOf('{');
+            const jsonEnd = text.lastIndexOf('}') + 1;
+            
+            if (jsonStart >= 0 && jsonEnd > jsonStart) {
+                const jsonString = text.substring(jsonStart, jsonEnd);
+                data = JSON.parse(jsonString);
+            } else {
+                throw new Error('No valid JSON found in response');
+            }
+        } catch (e) {
+            console.error('Error parsing JSON:', text);
+            throw new Error('Invalid JSON response from server');
+        }
+        
         if (data.status === 'success') {
             Swal.fire({
                 icon: 'success',
@@ -96,9 +125,26 @@ function submitService(formData) {
             }).then(() => {
                 location.reload();
             });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'An error occurred while saving the service.',
+                confirmButtonColor: '#f97316'
+            });
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Submission Failed',
+            text: 'There was a problem connecting to the server. Please try again.',
+            confirmButtonColor: '#f97316'
+        });
     });
 }
+
 
 function editService(id) {
     fetch(`../handlers/services_handler.php?action=get&id=${id}`)
