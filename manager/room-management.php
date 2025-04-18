@@ -5,16 +5,14 @@ require_once '../config/database.php';
 require_once '../includes/session.php';
 // check_admin();
 
+// Include header
+include_once 'includes/header.php';
+
+// Include sidebar
+include_once 'includes/sidebar.php';
 ?>
-<head>
-    <meta name="viewport" content="width=], initial-scale=1.0">
-    <title>Room || Dashboard</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
-</head>
-
+<!-- Main Content -->
 <div class="flex-1 overflow-auto">
     <div class="p-6">
     <!-- Header with Add Room Button -->
@@ -25,7 +23,6 @@ require_once '../includes/session.php';
         </button>
     </div>
 
-    <!-- Room Table -->
  <!-- Room Table -->
 <div class="bg-white rounded-lg shadow-lg overflow-hidden">
     <table class="min-w-full">
@@ -366,8 +363,8 @@ document.getElementById('roomForm').addEventListener('submit', function(e) {
                 text: 'The new room has been added to the system',
                 confirmButtonColor: '#f97316'
             }).then(() => {
-                // closeModal();
-                // location.reload();
+                closeModal();
+                location.reload();
             });
         } else {
             Swal.fire({
@@ -552,3 +549,7 @@ window.onclick = function(event) {
 }
 </script>
 
+<?php
+// Include footer
+include_once 'includes/footer.php';
+?>

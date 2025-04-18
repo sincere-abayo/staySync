@@ -3,56 +3,58 @@ session_start();
 require_once '../config/database.php';
 // check_admin();
 
+// Include header
+include_once 'includes/header.php';
+
+// Include sidebar
+include_once 'includes/sidebar.php';
 ?>
-<head>
-    <meta name="viewport" content="width=], initial-scale=1.0">
-    <title>Services || Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
-</head>
-<div class="p-6">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-teal-950">Services Management</h2>
-        <button onclick="openModal()" class="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600">
-            <i class="fas fa-plus mr-2"></i>Add New Service
-        </button>
-    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <?php
-        $services = $conn->query("SELECT * FROM hotel_services ORDER BY created_at DESC");
-        while($service = $services->fetch_assoc()): ?>
-            <div class="bg-white p-6 rounded-lg shadow-lg">
-            <div class="flex justify-between items-start mb-4">
-    <div class="flex items-center">
-        <div class="w-16 h-16 rounded-lg overflow-hidden">
-            <img src="../<?php echo $service['image']; ?>" 
-                 alt="<?php echo $service['name']; ?>" 
-                 class="w-full h-full object-cover">
+<!-- Main Content -->
+<div class="flex-1 overflow-auto">
+    <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-teal-950">Services Management</h2>
+            <button onclick="openModal()" class="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600">
+                <i class="fas fa-plus mr-2"></i>Add New Service
+            </button>
         </div>
-        <div class="ml-4">
-            <h3 class="text-xl font-semibold text-teal-950"><?php echo $service['name']; ?></h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <?php
+            $services = $conn->query("SELECT * FROM hotel_services ORDER BY created_at DESC");
+            while($service = $services->fetch_assoc()): ?>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center">
+                        <div class="w-16 h-16 rounded-lg overflow-hidden">
+                            <img src="../<?php echo $service['image']; ?>" 
+                                alt="<?php echo $service['name']; ?>" 
+                                class="w-full h-full object-cover">
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-xl font-semibold text-teal-950"><?php echo $service['name']; ?></h3>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editService(<?php echo $service['id']; ?>)" class="text-blue-500 hover:text-blue-700">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteService(<?php echo $service['id']; ?>)" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                    <p class="text-gray-600"><?php echo $service['description']; ?></p>
+                </div>
+            <?php endwhile; ?>
         </div>
-    </div>
-    <div class="flex space-x-2">
-        <button onclick="editService(<?php echo $service['id']; ?>)" class="text-blue-500 hover:text-blue-700">
-            <i class="fas fa-edit"></i>
-        </button>
-        <button onclick="deleteService(<?php echo $service['id']; ?>)" class="text-red-500 hover:text-red-700">
-            <i class="fas fa-trash"></i>
-        </button>
     </div>
 </div>
 
-                <p class="text-gray-600"><?php echo $service['description']; ?></p>
-            </div>
-        <?php endwhile; ?>
-    </div>
-</div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-
 function openModal() {
     Swal.fire({
         title: 'Add New Service',
@@ -87,11 +89,7 @@ function openModal() {
     });
 }
 
-    function submitService(formData) {
-          // Log the form data for debugging
-//   for (let pair of formData.entries()) {
-//         console.log(pair[0] + ': ' + pair[1]);
-//     }
+function submitService(formData) {
     fetch('../handlers/services_handler.php', {
         method: 'POST',
         body: formData
@@ -144,7 +142,6 @@ function openModal() {
         });
     });
 }
-
 
 function editService(id) {
     fetch(`../handlers/services_handler.php?action=get&id=${id}`)
@@ -212,6 +209,9 @@ function deleteService(id) {
         }
     });
 }
-
-
 </script>
+
+<?php
+// Include footer
+include_once 'includes/footer.php';
+?>

@@ -2,20 +2,17 @@
 require_once '../includes/session.php';
 require_once '../config/database.php';
 
+// Include header
+include_once 'includes/header.php';
+
+// Include sidebar
+include_once 'includes/sidebar.php';
+
 $room_id = filter_var($_GET['id'], FILTER_SANITIZE_NUMBER_INT);
 $room = $conn->query("SELECT * FROM rooms WHERE id = $room_id")->fetch_assoc();
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Room Details - <?php echo $room['room_number']; ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-gray-100">
+<!-- Main Content -->
+<div class="flex-1 overflow-auto">
     <div class="container mx-auto px-4 py-8">
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
             <!-- Room Header -->
@@ -672,6 +669,7 @@ function setPrimaryImage(imageId) {
 
 </script>
 
-</body>
-
-</html>
+<?php
+// Include footer
+include_once 'includes/footer.php';
+?>

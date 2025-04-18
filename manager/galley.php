@@ -4,48 +4,50 @@ require_once '../config/database.php';
 require_once '../includes/session.php';
 // check_admin();
 
-?>
-<head>
-    <meta name="viewport" content="width=], initial-scale=1.0">
-    <title>Services || Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
-</head>
-<div class="p-6">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-teal-950">Gallery Management</h2>
-        <button onclick="openModal()" class="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600">
-            <i class="fas fa-plus mr-2"></i>Add New Image
-        </button>
-    </div>
+// Include header
+include_once 'includes/header.php';
 
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        <?php
-        $images = $conn->query("SELECT * FROM gallery_images ORDER BY created_at DESC");
-        while($image = $images->fetch_assoc()): ?>
-            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-                <div class="relative h-48">
-                    <img src="../<?php echo $image['image_path']; ?>" 
-                         alt="<?php echo $image['title']; ?>" 
-                         class="w-full h-full object-cover">
-                    <div class="absolute top-2 right-2 flex space-x-2">
-                        <button onclick="editImage(<?php echo $image['id']; ?>)" 
-                                class="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="deleteImage(<?php echo $image['id']; ?>)" 
-                                class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600">
-                            <i class="fas fa-trash"></i>
-                        </button>
+// Include sidebar
+include_once 'includes/sidebar.php';
+?>
+
+<!-- Main Content -->
+<div class="flex-1 overflow-auto">
+    <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-teal-950">Gallery Management</h2>
+            <button onclick="openModal()" class="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600">
+                <i class="fas fa-plus mr-2"></i>Add New Image
+            </button>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <?php
+            $images = $conn->query("SELECT * FROM gallery_images ORDER BY created_at DESC");
+            while($image = $images->fetch_assoc()): ?>
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <div class="relative h-48">
+                        <img src="../<?php echo $image['image_path']; ?>" 
+                            alt="<?php echo $image['title']; ?>" 
+                            class="w-full h-full object-cover">
+                        <div class="absolute top-2 right-2 flex space-x-2">
+                            <button onclick="editImage(<?php echo $image['id']; ?>)" 
+                                    class="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteImage(<?php echo $image['id']; ?>)" 
+                                    class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-teal-950"><?php echo $image['title']; ?></h3>
+                        <p class="text-sm text-gray-600"><?php echo $image['category']; ?></p>
                     </div>
                 </div>
-                <div class="p-4">
-                    <h3 class="font-semibold text-teal-950"><?php echo $image['title']; ?></h3>
-                    <p class="text-sm text-gray-600"><?php echo $image['category']; ?></p>
-                </div>
-            </div>
-        <?php endwhile; ?>
+            <?php endwhile; ?>
+        </div>
     </div>
 </div>
 
@@ -95,8 +97,27 @@ function submitGalleryImage(formData) {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(response => response.text())
+    .then(text => {
+        // Try to parse as JSON, but handle case where there might be PHP warnings
+        let data;
+        try {
+            // If there are PHP warnings, they'll be at the beginning of the response
+            // Try to extract just the JSON part
+            const jsonStart = text.indexOf('{');
+            const jsonEnd = text.lastIndexOf('}') + 1;
+            
+            if (jsonStart >= 0 && jsonEnd > jsonStart) {
+                const jsonString = text.substring(jsonStart, jsonEnd);
+                data = JSON.parse(jsonString);
+            } else {
+                throw new Error('No valid JSON found in response');
+            }
+        } catch (e) {
+            console.error('Error parsing JSON:', text);
+            throw new Error('Invalid JSON response from server');
+        }
+        
         if (data.status === 'success') {
             Swal.fire({
                 icon: 'success',
@@ -105,7 +126,23 @@ function submitGalleryImage(formData) {
             }).then(() => {
                 location.reload();
             });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'An error occurred while saving the image.',
+                confirmButtonColor: '#f97316'
+            });
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Submission Failed',
+            text: 'There was a problem connecting to the server. Please try again.',
+            confirmButtonColor: '#f97316'
+        });
     });
 }
 
@@ -185,5 +222,9 @@ function deleteImage(id) {
         }
     });
 }
-
 </script>
+
+<?php
+// Include footer
+include_once 'includes/footer.php';
+?>
