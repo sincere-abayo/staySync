@@ -9,23 +9,31 @@ if (!is_logged_in()) {
 }
 
 $user_id = get_user_id();
+
+include 'includes/sidebar.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Bookings - Stay Sync</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-gray-50">
-    <?php include 'includes/header.php'; ?>
+
+
 
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold text-teal-950 mb-8">My Bookings</h1>
+<?php
+ // Display session messages
+ if (isset($_SESSION['payment_message'])) {
+    $message_type = $_SESSION['payment_message']['type'];
+    $message_text = $_SESSION['payment_message']['text'];
+    
+    $bg_color = $message_type === 'success' ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-500 text-red-700';
+    
+    echo "<div class='$bg_color border-l-4 p-4 mb-6' role='alert'>";
+    echo "<p>$message_text</p>";
+    echo "</div>";
+    
+    unset($_SESSION['payment_message']);
+}
 
+?>
         <!-- Booking Status Tabs -->
         <div class="mb-8">
             <div class="border-b border-gray-200">
@@ -199,10 +207,24 @@ $user_id = get_user_id();
             <div>
                 <p class="text-gray-600">Payment Method</p>
                 <p class="font-medium"><?php 
-                    echo $payment['payment_method'] === 'credit_card' ? 
-                        'Card ending in ' . $payment_details['card'] : 
-                        $payment_details['network'] . ' (' . $payment_details['phone'] . ')'; 
-                ?></p>
+    // First decode the JSON payment details
+    $payment_details = json_decode($payment['payment_details'], true);
+    
+    // Check payment method and display appropriate details
+    if ($payment['payment_method'] === 'card') {
+        echo 'Card ending in ' . (isset($payment_details['card_number']) ? substr($payment_details['card_number'], -4) : 'XXXX');
+    } else if ($payment['payment_method'] === 'mobile_money') {
+        echo (isset($payment_details['network']) ? $payment_details['network'] : 'Mobile Money') . 
+             ' (' . (isset($payment_details['phone_number']) ? $payment_details['phone_number'] : 'N/A') . ')';
+    } else {
+        // For other payment methods like cash, bank transfer, etc.
+        echo ucfirst(str_replace('_', ' ', $payment['payment_method']));
+        if (isset($payment_details['reference']) && !empty($payment_details['reference'])) {
+            echo ' (Ref: ' . $payment_details['reference'] . ')';
+        }
+    }
+?></p>
+
             </div>
             <div>
                 <p class="text-gray-600">Transaction ID</p>
@@ -344,7 +366,9 @@ $user_id = get_user_id();
     });
 }
 
-        function addReview(bookingId) {
+   
+
+function addReview(bookingId) {
     document.getElementById('booking_id').value = bookingId;
     document.getElementById('reviewModal').classList.remove('hidden');
 }
@@ -353,7 +377,7 @@ function closeReviewModal() {
     document.getElementById('reviewModal').classList.add('hidden');
     document.getElementById('reviewForm').reset();
     resetStars();
-}
+} 
 
 function setRating(rating) {
     document.getElementById('rating').value = rating;
@@ -410,27 +434,30 @@ document.getElementById('reviewForm').addEventListener('submit', function(e) {
         }
     });
 });
-function processPayment(bookingId, amount) {
-    Swal.fire({
-        title: 'Select Payment Method',
-        html: `
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <button onclick="showCardPayment(${bookingId}, ${amount})" 
-                        class="p-4 border rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    <i class="fas fa-credit-card text-2xl mb-2 text-amber-500"></i>
-                    <p class="font-medium">Card Payment</p>
-                </button>
-                <button onclick="showMobileMoneyPayment(${bookingId}, ${amount})" 
-                        class="p-4 border rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    <i class="fas fa-mobile-alt text-2xl mb-2 text-amber-500"></i>
-                    <p class="font-medium">Mobile Money</p>
-                </button>
-            </div>
-        `,
-        showConfirmButton: false,
-        showCloseButton: true
-    });
-}
+
+
+// function processPayment(bookingId, amount) {
+//     Swal.fire({
+//         title: 'Select Payment Method',
+//         html: `
+//             <div class="grid grid-cols-2 gap-4 mb-4">
+//                 <button onclick="showCardPayment(${bookingId}, ${amount})" 
+//                         class="p-4 border rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-amber-500">
+//                     <i class="fas fa-credit-card text-2xl mb-2 text-amber-500"></i>
+//                     <p class="font-medium">Card Payment</p>
+//                 </button>
+//                 <button onclick="showMobileMoneyPayment(${bookingId}, ${amount})" 
+//                         class="p-4 border rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-amber-500">
+//                     <i class="fas fa-mobile-alt text-2xl mb-2 text-amber-500"></i>
+//                     <p class="font-medium">Mobile Money</p>
+//                 </button>
+//             </div>
+//         `,
+//         showConfirmButton: false,
+//         showCloseButton: true
+//     });
+// }
+
 
 function showCardPayment(bookingId, amount) {
     const cardForm = () => Swal.fire({
@@ -514,37 +541,102 @@ function showMobileMoneyPayment(bookingId, amount) {
     });
 }
 
-function submitPayment(bookingId, amount, paymentMethod) {
-    const paymentData = new URLSearchParams({
-        action: 'process_payment',
-        booking_id: bookingId,
-        amount: amount,
-        payment_method: paymentMethod
+// view room Features
+function processPayment(bookingId, amount) {
+    // First show the payment form modal
+    Swal.fire({
+        title: 'Payment Details',
+        html: `
+            <form id="paymentForm" action="../handlers/payment_handler.php" method="POST">
+                <input type="hidden" name="action" value="add">
+                <input type="hidden" name="booking_id" value="${bookingId}">
+                <input type="hidden" name="amount" value="${amount}">
+                <input type="hidden" name="redirect_url" value="${window.location.href}">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                    <select id="payment_method" name="payment_method" class="swal2-input w-full" onchange="togglePaymentFields()">
+                        <option value="cash">Cash</option>
+                        <option value="credit_card">Credit Card</option>
+                        <option value="debit_card">Debit Card</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="mobile_money">Mobile Money</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Reference Number</label>
+                    <input type="text" id="reference_number" name="reference_number" class="swal2-input w-full" placeholder="Transaction reference (if applicable)">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
+                    <input type="date" id="payment_date" name="payment_date" class="swal2-input w-full" value="${new Date().toISOString().split('T')[0]}">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea id="notes" name="notes" class="swal2-textarea w-full" placeholder="Additional payment details"></textarea>
+                </div>
+            </form>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Process Payment',
+        confirmButtonColor: '#f97316',
+        cancelButtonText: 'Cancel',
+        preConfirm: () => {
+            // Validate form
+            const paymentMethod = document.getElementById('payment_method').value;
+            const paymentDate = document.getElementById('payment_date').value;
+            
+            if (!paymentMethod || !paymentDate) {
+                Swal.showValidationMessage('Please fill all required fields');
+                return false;
+            }
+            
+            return true;
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Submit the form
+            document.getElementById('paymentForm').submit();
+        }
     });
+}
 
-
-   // Add card-specific data
-   if (paymentMethod === 'card') {
-        const cardNumber = document.getElementById('card_number').value;
-        paymentData.append('card_number', cardNumber);
-        paymentData.append('expiry_date', document.getElementById('expiry_date').value);
-        paymentData.append('cvv', document.getElementById('cvv').value);
+//  submitPayment function that matches the cancelBooking format
+function submitPayment(bookingId, amount, paymentMethod, paymentDetails) {
+    // Show loading state
+    Swal.fire({
+        title: 'Processing Payment',
+        text: 'Please wait...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // Construct URL-encoded body string
+    let bodyData = `action=process_payment&booking_id=${bookingId}&amount=${amount}&payment_method=${paymentMethod}`;
+    
+    // Add payment-specific data
+    if (paymentMethod === 'card') {
+        bodyData += `&card_number=${paymentDetails.cardNumber}&expiry_date=${paymentDetails.expiryDate}&cvv=${paymentDetails.cvv}`;
     } else {
-        paymentData.append('phone_number', document.getElementById('phone_number').value);
-        paymentData.append('network', document.getElementById('network').value);
+        bodyData += `&phone_number=${paymentDetails.phoneNumber}&network=${paymentDetails.network}`;
     }
-
-    return fetch('../handlers/booking_handler.php', {
+    
+    fetch('../handlers/booking_handler.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams(paymentData)
+        body: bodyData
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            return Swal.fire({
+            Swal.fire({
                 icon: 'success',
                 title: 'Payment Successful',
                 text: 'Your booking has been confirmed!',
@@ -553,16 +645,26 @@ function submitPayment(bookingId, amount, paymentMethod) {
                 location.reload();
             });
         } else {
-            throw new Error(data.message || 'Payment processing failed');
+            Swal.fire({
+                icon: 'error',
+                title: 'Payment Failed',
+                text: data.message || 'An error occurred while processing your payment.',
+                confirmButtonColor: '#f97316'
+            });
         }
     })
     .catch(error => {
-        throw new Error(error.message || 'An error occurred during payment processing');
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An unexpected error occurred. Please try again.',
+            confirmButtonColor: '#f97316'
+        });
     });
-
 }
 
-// view room Features
+
 function viewRoomFeatures(roomId) {
     fetch(`../handlers/room_handler.php?action=get_features&room_id=${roomId}`)
     .then(response => response.json())
@@ -622,5 +724,4 @@ function requestSupport(bookingId) {
 </script>
 
     <?php include 'includes/footer.php'; ?>
-</body>
-</html>
+
