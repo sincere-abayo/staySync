@@ -409,22 +409,41 @@ function deleteRoom(roomId) {
             fetch(`../handlers/room_handler.php?action=delete&id=${roomId}`, {
                 method: 'DELETE'
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.message || `HTTP error! Status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.status === 'success') {
                     Swal.fire({
                         icon: 'success',
                         title: 'Deleted!',
-                        text: 'Room has been deleted.',
+                        text: data.message || 'Room has been deleted.',
                         confirmButtonColor: '#f97316'
                     }).then(() => {
                         location.reload();
                     });
+                } else {
+                    throw new Error(data.message || 'Unknown error occurred');
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message || 'Failed to delete room',
+                    confirmButtonColor: '#f97316'
+                });
             });
         }
     });
 }
+
 
 function editRoom(roomId) {
     Swal.fire({

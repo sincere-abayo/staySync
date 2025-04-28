@@ -170,14 +170,7 @@ include_once 'includes/sidebar.php';
                                             class="text-teal-950 hover:text-teal-800">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button onclick="editRoom(<?php echo $room['id']; ?>)" 
-                                            class="text-blue-500 hover:text-blue-700">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button onclick="deleteRoom(<?php echo $room['id']; ?>)" 
-                                            class="text-red-500 hover:text-red-700">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                   
                                 </div>
                             </div>
                         </div>
@@ -216,14 +209,7 @@ include_once 'includes/sidebar.php';
                                         <p class="text-gray-600">ID: <?php echo $staff['employee_id']; ?></p>
                                     </div>
                                 </div>
-                                <div class="mt-4 flex justify-end space-x-2">
-                                    <button onclick="editStaff(<?php echo $staff['id']; ?>)" class="text-blue-500 hover:text-blue-700">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button onclick="deleteStaff(<?php echo $staff['id']; ?>)" class="text-red-500 hover:text-red-700">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
+                                
                             </div>
                         <?php endwhile;
                     } else { ?>

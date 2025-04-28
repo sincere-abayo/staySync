@@ -5,35 +5,63 @@ require_once '../config/database.php';
 require_once '../includes/session.php';
 
 // check_admin();
+header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
-    $room_id = filter_var($_GET['id'], FILTER_SANITIZE_NUMBER_INT);
-    
-    // Check if room exists and get image path
-    $stmt = $conn->prepare("SELECT image FROM rooms WHERE id = ?");
-    $stmt->bind_param("i", $room_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $room = $result->fetch_assoc();
-
-    // Delete room
-    $stmt = $conn->prepare("DELETE FROM rooms WHERE id = ?");
-    $stmt->bind_param("i", $room_id);
-
-    if ($stmt->execute()) {
-        // Delete image file if exists
-        if ($room && $room['image'] && file_exists('../' . $room['image'])) {
-            unlink('../' . $room['image']);
+    try {
+        $room_id = filter_var($_GET['id'], FILTER_SANITIZE_NUMBER_INT);
+        if (!$room_id) {
+            throw new Exception("Invalid room ID");
         }
-        echo json_encode(['status' => 'success']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'Failed to delete room']);
+        
+        // First check if there are any bookings for this room
+        $check_stmt = $conn->prepare("SELECT COUNT(*) as booking_count FROM bookings WHERE room_id = ?");
+        $check_stmt->bind_param("i", $room_id);
+        $check_stmt->execute();
+        $result = $check_stmt->get_result();
+        $booking_count = $result->fetch_assoc()['booking_count'];
+        $check_stmt->close();
+        
+        if ($booking_count > 0) {
+            // Room has bookings, cannot delete
+            echo json_encode([
+                'status' => 'error', 
+                'message' => 'Cannot delete this room because it has associated bookings. Please delete the bookings first'
+            ]);
+            exit;
+        }
+        
+        // If no bookings, proceed with deletion
+        // Get room image first
+        $stmt = $conn->prepare("SELECT image FROM rooms WHERE id = ?");
+        $stmt->bind_param("i", $room_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $room = $result->fetch_assoc();
+        $stmt->close();
+        
+        // Delete the room
+        $delete_stmt = $conn->prepare("DELETE FROM rooms WHERE id = ?");
+        $delete_stmt->bind_param("i", $room_id);
+        
+        if ($delete_stmt->execute()) {
+            // Delete image file if exists
+            if ($room && $room['image'] && file_exists('../' . $room['image'])) {
+                unlink('../' . $room['image']);
+            }
+            echo json_encode(['status' => 'success', 'message' => 'Room deleted successfully']);
+        } else {
+            throw new Exception("Failed to delete room: " . $conn->error);
+        }
+        
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
     }
     exit;
 }
 
 
-header('Content-Type: application/json');
+
 
 if ($_POST['action'] === 'add') {
     $room_number = filter_var($_POST['room_number'], FILTER_SANITIZE_STRING);
