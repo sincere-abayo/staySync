@@ -1,5 +1,5 @@
 <!-- Sidebar -->
-<div class="bg-teal-950 text-white w-64 flex-shrink-0 transition-all duration-300" id="sidebar">
+<div class="bg-teal-950 text-white w-64 flex-shrink-0 transition-all duration-300 hidden lg:block" id="sidebar">
     <div class="p-4 border-b border-amber-500">
         <img src="../images/logo.png" alt="Logo" class="w-20 mx-auto mb-4">
         <h1 class="text-2xl font-bold text-center">StaySync </h1>
@@ -74,3 +74,5 @@
 <button class="fixed top-4 right-4 z-50 lg:hidden bg-teal-950 text-white p-2 rounded-lg" onclick="toggleSidebar()">
     <i class="fas fa-bars"></i>
 </button>
+
+
