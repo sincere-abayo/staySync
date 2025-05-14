@@ -24,7 +24,7 @@ include_once 'includes/sidebar.php';
     </div>
 
  <!-- Room Table -->
-<div class="bg-white rounded-lg shadow-lg overflow-hidden">
+<div class="bg-white rounded-lg shadow-lg overflow-x-auto    ">
     <table class="min-w-full">
         <thead class="bg-teal-950 text-white">
             <tr>
@@ -483,6 +483,7 @@ function editRoom(roomId) {
             }
         })
         .catch(error => {
+            console.error('Error:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
